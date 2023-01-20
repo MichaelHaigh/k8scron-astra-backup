@@ -21,9 +21,9 @@ spec:
             - -c
             - >
               BACKUPS_TO_KEEP=10 &&
-              APPID=30f1b2c2-ff63-4431-a8af-94db8e4671d3 &&
+              APP_ID=30f1b2c2-ff63-4431-a8af-94db8e4671d3 &&
               KUBECTL_VERSION=1.23.9 &&
-              ACTOOLKIT_VERSION=2.5.1 &&
+              ACTOOLKIT_VERSION=2.6.0 &&
               echo "Starting install" &&
               apk add py3-pip curl jq &&
               python3 -m pip install --upgrade pip &&
@@ -32,7 +32,7 @@ spec:
               mv kubectl /usr/bin/kubectl &&
               chmod +x /usr/bin/kubectl && 
               echo "Starting file download and execution" &&
-              curl -sLO https://github.com/MichaelHaigh/k8scron-astra-backup/backup.sh &&
+              curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/backup.sh &&
               sh backup.sh $APP_ID $BACKUPS_TO_KEEP
             volumeMounts:
               - mountPath: /etc/astra-toolkits

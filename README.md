@@ -60,3 +60,36 @@ $ kubectl -n $NAMESPACE get cronjobs
 NAME              SCHEDULE       SUSPEND   ACTIVE   LAST SCHEDULE   AGE
 astra-pg-backup   */10 * * * *   False     0        <none>          78s
 ```
+
+After waiting a set period of time (defined by the `schedule`), we see that the `last schedule` field is populated:
+
+```text
+$ kubectl -n $NAMESPACE get cronjobs
+NAME              SCHEDULE       SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+astra-pg-backup   */10 * * * *   False     0        3m57s           86m
+```
+
+We can also check for the status of the pods, and view the logs to ensure everything completed successfully:
+
+```text
+kubectl -n wordpress get pods
+NAME                             READY   STATUS      RESTARTS   AGE
+astra-pg-backup-27903980-vfgbg   0/1     Completed   0          14m
+astra-pg-backup-27903990-d2w82   0/1     Completed   0          4m10s
+wordpress-597fbbf884-pxk58       1/1     Running     0          24h
+wordpress-mariadb-0              1/1     Running     0          24h
+```
+
+```text
+$ kubectl -n wordpress logs astra-pg-backup-27903990-d2w82 | tail
+Starting file download and execution
+--> creating astra control backup
+{"type": "application/astra-appBackup", "version": "1.1", "id": "af6ac8e9-ee14-4ea7-a5c3-a75984fe4c67", "name": "cron-20230120183019", "bucketID": "361aa1e0-60bc-4f1b-ba3b-bdaa890b5bac", "state": "pending", "stateUnready": [], "metadata": {"labels": [{"name": "astra.netapp.io/labels/read-only/triggerType", "value": "backup"}], "creationTimestamp": "2023-01-20T18:30:25Z", "modificationTimestamp": "2023-01-20T18:30:25Z", "createdBy": "8146d293-d897-4e16-ab10-8dca934637ab"}}
+Starting backup of 30f1b2c2-ff63-4431-a8af-94db8e4671d3
+Waiting for backup to complete..complete!
+--> checking number of astra control backups
+--> backups found: 11 is greater than backups to keep: 10
+Backup b6ceaedb-3d07-438b-9f51-86a6bbb58e1d destroyed
+--> checking number of astra control backups
+--> backups at 10
+```
