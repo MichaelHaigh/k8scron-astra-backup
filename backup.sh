@@ -1,0 +1,69 @@
+#!/bin/sh
+
+BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
+
+# Error Codes
+ebase=20
+eusage=$((ebase+1))
+
+astra_create_backup() {
+  app=$1
+  echo "--> creating astra control backup"
+  actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t 60
+  rc=$?
+  if [ ${rc} -ne 0 ] ; then
+    echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
+    return ${rc}
+  fi
+}
+
+astra_delete_backups() {
+  app=$1
+  backups_keep=$2
+
+  echo "--> checking number of astra control backups"
+  backup_json=$(actoolkit -o json list backups --app ${app})
+  rc=$?
+  if [ ${rc} -ne 0 ] ; then
+    echo "--> error running list backups for ${app}"
+    return ${rc}
+  fi
+  num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
+  
+  while [ ${num_backups} -gt ${backups_keep} ] ; do
+
+    echo "--> backups found: ${num_backups} is greater than backups to keep: ${backups_keep}"
+    oldest_backup=$(echo ${backup_json} | jq -r '.items | min_by(.metadata.creationTimestamp) | .id')
+    actoolkit destroy backup ${app} ${oldest_backup}
+
+    if [ ${rc} -ne 0 ] ; then
+      echo "--> error running destroy backup ${app} ${oldest_backup}"
+      return ${rc}
+    fi
+
+    sleep 120
+    echo "--> checking number of astra control backups"
+    backup_json=$(actoolkit -o json list backups --app ${app})
+    rc=$?
+    if [ ${rc} -ne 0 ] ; then
+      echo "--> error running list backups for ${app}"
+      return ${rc}
+    fi
+    num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
+  done
+
+  echo "--> backups at ${num_backups}"
+}
+
+#
+# "main"
+#
+app_id=$1
+backups_to_keep=$2
+if [ -z "${app_id}" ] || [ -z ${backups_to_keep} ]; then
+  echo "Usage: $0 <app_id> <backups_to_keep>"
+  exit ${eusage}
+fi
+
+astra_create_backup ${app_id}
+astra_delete_backups ${app_id} ${backups_to_keep}

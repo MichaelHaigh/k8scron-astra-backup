@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: astra-pg-backup
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+            - name: astra-control-config
+              secret:
+                secretName: astra-control-config
+          containers:
+          - name: alpine-actoolkit
+            image: alpine:latest
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - >
+              BACKUPS_TO_KEEP=10 &&
+              APPID=30f1b2c2-ff63-4431-a8af-94db8e4671d3 &&
+              KUBECTL_VERSION=1.23.9 &&
+              ACTOOLKIT_VERSION=2.5.1 &&
+              echo "Starting install" &&
+              apk add py3-pip curl jq &&
+              python3 -m pip install --upgrade pip &&
+              python3 -m pip install actoolkit==$ACTOOLKIT_VERSION &&
+              curl -sLO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl &&
+              mv kubectl /usr/bin/kubectl &&
+              chmod +x /usr/bin/kubectl && 
+              echo "Starting file download and execution" &&
+              curl -sLO https://github.com/MichaelHaigh/k8scron-astra-backup/backup.sh &&
+              sh backup.sh $APP_ID $BACKUPS_TO_KEEP
+            volumeMounts:
+              - mountPath: /etc/astra-toolkits
+                name: astra-control-config
+                readOnly: true
+          restartPolicy: Never
