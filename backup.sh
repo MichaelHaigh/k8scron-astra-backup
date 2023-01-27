@@ -5,6 +5,9 @@ BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
 # Error Codes
 ebase=20
 eusage=$((ebase+1))
+eaccreate=$((ebase+2))
+eaclist=$((ebase+3))
+eacdestroy=$((ebase+4))
 
 astra_create_backup() {
   app=$1
@@ -13,7 +16,7 @@ astra_create_backup() {
   rc=$?
   if [ ${rc} -ne 0 ] ; then
     echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
-    return ${rc}
+    exit ${eaccreate}
   fi
 }
 
@@ -26,7 +29,7 @@ astra_delete_backups() {
   rc=$?
   if [ ${rc} -ne 0 ] ; then
     echo "--> error running list backups for ${app}"
-    return ${rc}
+    exit ${eaclist}
   fi
   num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
   
@@ -35,10 +38,10 @@ astra_delete_backups() {
     echo "--> backups found: ${num_backups} is greater than backups to keep: ${backups_keep}"
     oldest_backup=$(echo ${backup_json} | jq -r '.items | min_by(.metadata.creationTimestamp) | .id')
     actoolkit destroy backup ${app} ${oldest_backup}
-
+    rc=$?
     if [ ${rc} -ne 0 ] ; then
       echo "--> error running destroy backup ${app} ${oldest_backup}"
-      return ${rc}
+      exit ${eacdestroy}
     fi
 
     sleep 120
@@ -47,7 +50,7 @@ astra_delete_backups() {
     rc=$?
     if [ ${rc} -ne 0 ] ; then
       echo "--> error running list backups for ${app}"
-      return ${rc}
+      exit ${eaclist}
     fi
     num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
   done

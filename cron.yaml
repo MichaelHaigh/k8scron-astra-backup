@@ -16,14 +16,19 @@ spec:
           - name: alpine-actoolkit
             image: alpine:latest
             imagePullPolicy: IfNotPresent
+            env:
+              - name: BACKUPS_TO_KEEP
+                value: "10"
+              - name: APP_ID
+                value: "f09769fa-9841-44a5-9f81-f621748d9c7b"
+              - name: KUBECTL_VERSION
+                value: "1.23.9"
+              - name: ACTOOLKIT_VERSION
+                value: "2.6.0"
             command: ["/bin/sh"]
             args:
             - -c
             - >
-              BACKUPS_TO_KEEP=10 &&
-              APP_ID=30f1b2c2-ff63-4431-a8af-94db8e4671d3 &&
-              KUBECTL_VERSION=1.23.9 &&
-              ACTOOLKIT_VERSION=2.6.0 &&
               echo "Starting install" &&
               apk add py3-pip curl jq &&
               python3 -m pip install --upgrade pip &&
