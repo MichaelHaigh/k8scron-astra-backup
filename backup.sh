@@ -14,7 +14,7 @@ astra_pgbackrest() {
   pgbackrest_repo=$2
   echo "--> running pgbackrest"
 
-  # Do the pgbackrest stuff here...
+  #Do the pgbackrest stuff here...
 
   echo "--> pgbackrest completed successfully"
 }
