@@ -9,6 +9,16 @@ eaccreate=$((ebase+2))
 eaclist=$((ebase+3))
 eacdestroy=$((ebase+4))
 
+astra_pgbackrest() {
+  app=$1
+  pgbackrest_repo=$2
+  echo "--> running pgbackrest"
+
+  # Do the pgbackrest stuff here...
+
+  echo "--> pgbackrest completed successfully"
+}
+
 astra_create_backup() {
   app=$1
   echo "--> creating astra control backup"
@@ -63,10 +73,12 @@ astra_delete_backups() {
 #
 app_id=$1
 backups_to_keep=$2
-if [ -z "${app_id}" ] || [ -z ${backups_to_keep} ]; then
-  echo "Usage: $0 <app_id> <backups_to_keep>"
+pgbackrest_repo=$3
+if [ -z "${app_id}" ] || [ -z ${backups_to_keep} ] || [ -z ${pgbackrest_repo} ]; then
+  echo "Usage: $0 <app_id> <backups_to_keep> <pgbackrest_repo>"
   exit ${eusage}
 fi
 
+astra_pgbackrest ${app_id} ${pgbackrest_repo}
 astra_create_backup ${app_id}
 astra_delete_backups ${app_id} ${backups_to_keep}
