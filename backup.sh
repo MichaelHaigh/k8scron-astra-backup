@@ -14,6 +14,8 @@ astra_pgbackrest() {
   pgbackrest_repo=$2
   echo "--> running pgbackrest"
 
+  #For now, just sleep a few minutes so I can exec to the pod and poke around
+  sleep 600
   #Do the pgbackrest stuff here...
 
   echo "--> pgbackrest completed successfully"

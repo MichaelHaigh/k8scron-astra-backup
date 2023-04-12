@@ -1,6 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
+  namespace: postgres-operator
   name: astra-pg-backup
 spec:
   schedule: "*/5 * * * *"
@@ -20,9 +21,9 @@ spec:
               - name: BACKUPS_TO_KEEP
                 value: "3"
               - name: APP_ID
-                value: "9c3be07e-96ae-4828-8dfe-3eec1c924d12"
-	      - name: PGBACKREST_REPO
-	        value: "pgtest_repo"
+                value: "c606d0f7-3b9f-425a-ac9a-edde98b07f61"
+              - name: PGBACKREST_REPO
+                value: "pgtest_repo"
               - name: KUBECTL_VERSION
                 value: "1.23.9"
               - name: ACTOOLKIT_VERSION
@@ -40,10 +41,10 @@ spec:
               chmod +x /usr/bin/kubectl && 
               echo "Starting file download and execution" &&
               curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/backup.sh &&
-	      curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/kubectl-pgo &&
-	      mv kubectl-pgo /usr/local/bin/kubectl-pgo &&
-	      chmod +x /usr/local/bin/kubectl-pgo &&
-              sh backup.sh $APP_ID $BACKUPS_TO_KEEP PGBACKREST_REPO
+              curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/kubectl-pgo &&
+              mv kubectl-pgo /usr/local/bin/kubectl-pgo &&
+              chmod +x /usr/local/bin/kubectl-pgo &&
+              sh backup.sh $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO
             volumeMounts:
               - mountPath: /etc/astra-toolkits
                 name: astra-control-config
