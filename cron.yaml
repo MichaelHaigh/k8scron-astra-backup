@@ -4,11 +4,13 @@ metadata:
   namespace: postgres-operator
   name: astra-pg-backup
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
+          serviceAccountName: pgo-admin-sa
           volumes:
             - name: astra-control-config
               secret:
@@ -26,6 +28,8 @@ spec:
                 value: "pgtest_repo"
               - name: KUBECTL_VERSION
                 value: "1.23.9"
+              - name: KUBECTL_PGO_VERSION
+                value: "0.2.0"
               - name: ACTOOLKIT_VERSION
                 value: "2.6.0"
             command: ["/bin/sh"]
@@ -34,6 +38,7 @@ spec:
             - >
               echo "Starting install" &&
               apk add py3-pip curl jq &&
+              apk add gcompat &&
               python3 -m pip install --upgrade pip &&
               python3 -m pip install actoolkit==$ACTOOLKIT_VERSION &&
               curl -sLO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl &&
@@ -41,8 +46,8 @@ spec:
               chmod +x /usr/bin/kubectl && 
               echo "Starting file download and execution" &&
               curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/backup.sh &&
-              curl -sLO https://raw.githubusercontent.com/MichaelHaigh/k8scron-astra-backup/main/kubectl-pgo &&
-              mv kubectl-pgo /usr/local/bin/kubectl-pgo &&
+              curl -sLO https://github.com/CrunchyData/postgres-operator-client/releases/download/v${KUBECTL_PGO_VERSION}/kubectl-pgo-linux-amd64 &&
+              mv kubectl-pgo-linux-amd64 /usr/local/bin/kubectl-pgo &&
               chmod +x /usr/local/bin/kubectl-pgo &&
               sh backup.sh $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO
             volumeMounts:
