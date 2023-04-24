@@ -36,7 +36,7 @@ spec:
                 value: "2.6.0"
               - name: PGBACKREST_TIMEOUT
                 value: "30"
-              - name: ASTRA_BACKUP_TIMEOUT
+              - name: ASTRA_BACKUP_POLL_INTERVAL
                 value: "60"
             command: ["/bin/sh"]
             args:
@@ -55,7 +55,7 @@ spec:
               curl -sLO https://github.com/CrunchyData/postgres-operator-client/releases/download/v${KUBECTL_PGO_VERSION}/kubectl-pgo-linux-amd64 &&
               mv kubectl-pgo-linux-amd64 /usr/local/bin/kubectl-pgo &&
               chmod +x /usr/local/bin/kubectl-pgo &&
-              sh backup.sh "postgres-operator" $PGDB_NAME $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO $PGBACKREST_TIMEOUT $ASTRA_BACKUP_TIMEOUT
+              sh backup.sh "postgres-operator" $PGDB_NAME $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO $PGBACKREST_TIMEOUT $ASTRA_BACKUP_POLL_INTERVAL
             volumeMounts:
               - mountPath: /etc/astra-toolkits
                 name: astra-control-config

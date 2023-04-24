@@ -6,15 +6,17 @@ BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
 PGBACKREST_RES=1
 
 # Change as needed for difference stanza name, repository #, etc.  This is the filter used to determine
-# if the pgbackrest commnad has cmopleted
+# if the pgbackrest commnad has completed
 PGBACKREST_EXP_CMD="--stanza=db --repo=1 --type=incr"
 
 # Error Codes
 ebase=20
 eusage=$((ebase+1))
-eaccreate=$((ebase+2))
-eaclist=$((ebase+3))
-eacdestroy=$((ebase+4))
+epgannotation=$((ebase+2))
+epgbrtimeout=$((ebase+3))
+eaccreate=$((ebase+4))
+eaclist=$((ebase+5))
+eacdestroy=$((ebase+6))
 
 file_sn_ticket() {
     errmsg=$1
@@ -86,7 +88,7 @@ astra_pgbackrest() {
 	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
 	echo ${ERR}
 	file_sn_ticket ${ERR}
-	exit 1
+	exit ${epgannotation}
     fi
 
     # Now we need to wait until the pgbackrest pod is complete or error (timeout possibly)
@@ -97,7 +99,7 @@ astra_pgbackrest() {
 	ERR="pgbackrest job did not complete successfully, either timed out or ended in error"
 	echo ${ERR}
 	file_sn_ticket $ERR
-	exit 1
+	exit ${epgbrtimeout}
     fi
     
     echo "--> pgbackrest completed successfully"
@@ -105,9 +107,9 @@ astra_pgbackrest() {
 
 astra_create_backup() {
     app=$1
-    astra_backup_timeout=$2
+    astra_backup_poll_interval=$2
     echo "--> creating astra control backup"
-    actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_timeout}
+    actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_poll_interval}
     rc=$?
     if [ ${rc} -ne 0 ] ; then
 	echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
@@ -162,12 +164,12 @@ app_id=$3
 backups_to_keep=$4
 pgbackrest_repo=$5
 pgbackrest_timeout=$6
-astra_backup_timeout=$7
-if [ -z ${namespace} ] || [ -z ${dbname} ] || [ -z ${app_id} ] || [ -z ${backups_to_keep} ] || [ -z ${pgbackrest_repo} ] || [ -z ${pgbackrest_timeout} ] || [ -z ${astra_backup_timeout} ]; then
-    echo "Usage: $0 <namespace> <db_name> <app_id> <backups_to_keep> <pgbackrest_repo> <pgbackrest_timeout> <astra_backup_timeout>"
+astra_backup_poll_interval=$7
+if [ -z ${namespace} ] || [ -z ${dbname} ] || [ -z ${app_id} ] || [ -z ${backups_to_keep} ] || [ -z ${pgbackrest_repo} ] || [ -z ${pgbackrest_timeout} ] || [ -z ${astra_backup_poll_interval} ]; then
+    echo "Usage: $0 <namespace> <db_name> <app_id> <backups_to_keep> <pgbackrest_repo> <pgbackrest_timeout> <astra_backup_poll_interval>"
     exit ${eusage}
 fi
 
 astra_pgbackrest "${namespace}" "${dbname}" "${pgbackrest_repo}" ${pgbackrest_timeout}
-astra_create_backup ${app_id} ${astra_backup_timeout}
+astra_create_backup ${app_id} ${astra_backup_poll_interval}
 astra_delete_backups ${app_id} ${backups_to_keep}
