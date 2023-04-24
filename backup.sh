@@ -54,8 +54,8 @@ wait_pgbackrest() {
 			--field-selector 'status.phase=Succeeded'
 		  )
 
-	if [[ -n "${backup_cmd}" && "${backup_cmd}" == ${PGBACKREST_EXP_CMD} ]]; then
-	    echo "     Found backup command and it matched expected"
+	if [[ -n "${backup_cmd}" && "${backup_cmd}" == "${PGBACKREST_EXP_CMD}" ]]; then
+	    echo "     Found backup command and it matched expected: ${PGBACKREST_EXP_CMD}"
 	    PGBACKREST_RES=0
 	    return ${PGBACKREST_RES}
 	fi
