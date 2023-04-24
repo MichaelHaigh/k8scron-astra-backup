@@ -25,13 +25,17 @@ spec:
               - name: APP_ID
                 value: "c606d0f7-3b9f-425a-ac9a-edde98b07f61"
               - name: PGBACKREST_REPO
-                value: "pgtest_repo"
+                value: "repo1"
               - name: KUBECTL_VERSION
                 value: "1.23.9"
               - name: KUBECTL_PGO_VERSION
                 value: "0.2.0"
               - name: ACTOOLKIT_VERSION
                 value: "2.6.0"
+              - name: PGBACKREST_TIMEOUT
+                value: "30"
+              - name: ASTRA_BACKUP_TIMEOUT
+                value: "60"
             command: ["/bin/sh"]
             args:
             - -c
@@ -49,7 +53,7 @@ spec:
               curl -sLO https://github.com/CrunchyData/postgres-operator-client/releases/download/v${KUBECTL_PGO_VERSION}/kubectl-pgo-linux-amd64 &&
               mv kubectl-pgo-linux-amd64 /usr/local/bin/kubectl-pgo &&
               chmod +x /usr/local/bin/kubectl-pgo &&
-              sh backup.sh $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO
+              sh backup.sh ${NAMESPACE} $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO $PGBACKREST_TIMEOUT $ASTRA_BACKUP_TIMEOUT
             volumeMounts:
               - mountPath: /etc/astra-toolkits
                 name: astra-control-config

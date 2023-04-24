@@ -1,6 +1,9 @@
 #!/bin/sh
 
 BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
+# Need a global variable for wait_pgbackrest function.  One of the params contains ':' and does not
+# play well with a subshell invocation
+PGBACKREST_RES=1
 
 # Error Codes
 ebase=20
@@ -9,27 +12,108 @@ eaccreate=$((ebase+2))
 eaclist=$((ebase+3))
 eacdestroy=$((ebase+4))
 
+file_sn_ticket() {
+    errmsg=$1
+
+    # Do what's needed to file SN ticket
+
+}
+
+pgbackrest_backup_annotation() {
+    ns=$1
+    db=$2
+    kubectl get --namespace ${ns} postgrescluster/${db} \
+        --output 'go-template={{ index .metadata.annotations "postgres-operator.crunchydata.com/pgbackrest-backup" }}'
+}
+
+wait_pgbackrest() {
+    curr_anno=$1
+    timeout=$2
+    pgbackrest_repo=$3
+    db=$4
+    sleep_time=5
+
+    # timeout is in minutes, sleep time in seconds.
+    retries_per_min=`expr 60 / ${sleep_time}`
+    retries=`expr ${timeout} \* ${retries_per_min}`
+
+    i=1
+    while [ ${i} -le ${retries} ]; do
+	backup_cmd=""
+	backup_cmd=$(
+	    kubectl get pods --namespace postgres-operator \
+		    -o jsonpath="{.items[?(@.metadata.annotations.postgres-operator\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
+		    --selector "
+		    postgres-operator.crunchydata.com/cluster=${db},
+		    postgres-operator.crunchydata.com/pgbackrest-backup=manual,
+		    postgres-operator.crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
+			--field-selector 'status.phase=Succeeded'
+		  )
+
+	if [[ -z "${backup_cmd}" ]]; then
+	    echo "Backup command returned empty"
+	else
+	    echo "Backup command not empty: ${backup_cmd}"
+	fi
+
+	if [[ -n "${backup_cmd}" && "${backup_cmd}" == "--stanza=db --repo=1 --type=incr" ]]; then
+	    echo "Found backup command and it matched expected"
+	    PGBACKREST_RES=0
+	    return ${PGBACKREST_RES}
+	fi
+	sleep ${sleep_time}
+	i=$(( ${i} + 1 ))
+    done
+
+    # Return 1 if timeout exceeded and pgbackrest pod was not successful
+    PGBACKREST_RES=1
+    return ${PGBACKREST_RES}
+}
+
 astra_pgbackrest() {
-  app=$1
-  pgbackrest_repo=$2
-  echo "--> running pgbackrest"
+    ns=$1
+    db=$2
+    pgbackrest_repo=$3
+    pgbackrest_timeout=$4
 
-  #For now, just sleep a few minutes so I can exec to the pod and poke around
-  sleep 1800
-  #Do the pgbackrest stuff here...
+    echo "--> running pgbackrest"
 
-  echo "--> pgbackrest completed successfully"
+    prior=$(pgbackrest_backup_annotation ${ns} ${db})
+    # Assumption is that the first full backup has already been done - all automated backups will be incremental
+    result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
+    current=$(pgbackrest_backup_annotation $ns $db)
+
+    if [ "${current}" = "${prior}" ]; then
+	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
+	echo ${ERR}
+	file_sn_ticket ${ERR}
+	exit 1
+    fi
+
+    # Now we need to wait until the pgbackrest pod is complete or error (timeout possibly)
+    rc=1
+    wait_pgbackrest "${current}" ${pgbackrest_timeout} ${pgbackrest_repo} ${db}
+    # Using the global varaible modified in wait_pgbackrest - see comment at top of script
+    if [ ${PGBACKREST_RES} -ne 0 ]; then
+	ERR="pgbackrest job did not complete successfully, either timed out or ended in error"
+	echo ${ERR}
+	file_sn_ticket $ERR
+	exit 1
+    fi
+    
+    echo "--> pgbackrest completed successfully"
 }
 
 astra_create_backup() {
-  app=$1
-  echo "--> creating astra control backup"
-  actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t 60
-  rc=$?
-  if [ ${rc} -ne 0 ] ; then
-    echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
-    exit ${eaccreate}
-  fi
+    app=$1
+    astra_backup_timeout=$2
+    echo "--> creating astra control backup"
+    actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_timeout}
+    rc=$?
+    if [ ${rc} -ne 0 ] ; then
+	echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
+	exit ${eaccreate}
+    fi
 }
 
 astra_delete_backups() {
@@ -73,14 +157,18 @@ astra_delete_backups() {
 #
 # "main"
 #
-app_id=$1
-backups_to_keep=$2
-pgbackrest_repo=$3
-if [ -z "${app_id}" ] || [ -z ${backups_to_keep} ] || [ -z ${pgbackrest_repo} ]; then
-  echo "Usage: $0 <app_id> <backups_to_keep> <pgbackrest_repo>"
-  exit ${eusage}
+namespace=$1
+dbname=$2
+app_id=$3
+backups_to_keep=$4
+pgbackrest_repo=$5
+pgbackrest_timeout=$6
+astra_backup_timeout=$7
+if [ -z ${namespace} ] || [ -z ${dbname} ] || [ -z ${app_id} ] || [ -z ${backups_to_keep} ] || [ -z ${pgbackrest_repo} ] || [ -z ${pgbackrest_timeout} ] || [ -z ${astra_backup_timeout} ]; then
+    echo "Usage: $0 <namespace> <db_name> <app_id> <backups_to_keep> <pgbackrest_repo> <pgbackrest_timeout> <astra_backup_timeout>"
+    exit ${eusage}
 fi
 
-astra_pgbackrest ${app_id} ${pgbackrest_repo}
-astra_create_backup ${app_id}
+astra_pgbackrest "${namespace}" "${dbname}" "${pgbackrest_repo}" ${pgbackrest_timeout}
+astra_create_backup ${app_id} ${astra_backup_timeout}
 astra_delete_backups ${app_id} ${backups_to_keep}
