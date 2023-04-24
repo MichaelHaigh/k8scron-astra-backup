@@ -5,6 +5,10 @@ BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
 # play well with a subshell invocation
 PGBACKREST_RES=1
 
+# Change as needed for difference stanza name, repository #, etc.  This is the filter used to determine
+# if the pgbackrest commnad has cmopleted
+PGBACKREST_EXP_CMD="--stanza=db --repo=1 --type=incr"
+
 # Error Codes
 ebase=20
 eusage=$((ebase+1))
@@ -50,8 +54,8 @@ wait_pgbackrest() {
 			--field-selector 'status.phase=Succeeded'
 		  )
 
-	if [[ -n "${backup_cmd}" && "${backup_cmd}" == "--stanza=db --repo=1 --type=incr" ]]; then
-	    echo "Found backup command and it matched expected"
+	if [[ -n "${backup_cmd}" && "${backup_cmd}" == ${PGBACKREST_EXP_CMD} ]]; then
+	    echo "     Found backup command and it matched expected"
 	    PGBACKREST_RES=0
 	    return ${PGBACKREST_RES}
 	fi
