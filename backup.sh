@@ -50,17 +50,12 @@ wait_pgbackrest() {
 			--field-selector 'status.phase=Succeeded'
 		  )
 
-	if [[ -z "${backup_cmd}" ]]; then
-	    echo "Backup command returned empty"
-	else
-	    echo "Backup command not empty: ${backup_cmd}"
-	fi
-
 	if [[ -n "${backup_cmd}" && "${backup_cmd}" == "--stanza=db --repo=1 --type=incr" ]]; then
 	    echo "Found backup command and it matched expected"
 	    PGBACKREST_RES=0
 	    return ${PGBACKREST_RES}
 	fi
+	echo "     Waiting for pgbackrest backup to complete..."
 	sleep ${sleep_time}
 	i=$(( ${i} + 1 ))
     done
