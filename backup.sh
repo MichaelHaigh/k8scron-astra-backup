@@ -29,7 +29,7 @@ pgbackrest_backup_annotation() {
     ns=$1
     db=$2
     kubectl get --namespace ${ns} postgrescluster/${db} \
-        --output 'go-template={{ index .metadata.annotations "\"${ns}\".crunchydata.com/pgbackrest-backup" }}'
+        --output 'go-template={{ index .metadata.annotations "${ns}.crunchydata.com/pgbackrest-backup" }}'
 }
 
 wait_pgbackrest() {
@@ -49,11 +49,11 @@ wait_pgbackrest() {
 	backup_cmd=""
 	backup_cmd=$(
 	    kubectl get pods --namespace ${ns} \
-		    -o jsonpath="{.items[?(@.metadata.annotations.\"${ns}\"\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
+		    -o jsonpath="{.items[?(@.metadata.annotations.${ns}\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
 		    --selector "
-		    \"${ns}\".crunchydata.com/cluster=${db},
-		    \"${ns}\".crunchydata.com/pgbackrest-backup=manual,
-		    \"${ns}\".crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
+		    ${ns}.crunchydata.com/cluster=${db},
+		    ${ns}.crunchydata.com/pgbackrest-backup=manual,
+		    ${ns}.crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
 			--field-selector 'status.phase=Succeeded'
 		  )
 
