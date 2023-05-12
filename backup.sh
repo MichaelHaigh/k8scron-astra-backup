@@ -29,7 +29,7 @@ pgbackrest_backup_annotation() {
     ns=$1
     db=$2
     kubectl get --namespace ${ns} postgrescluster/${db} \
-        --output "go-template={{ index .metadata.annotations \"${ns}.crunchydata.com/pgbackrest-backup\" }}"
+        --output "go-template={{ index .metadata.annotations \"crunchydata.com/pgbackrest-backup\" }}"
 }
 
 wait_pgbackrest() {
@@ -80,10 +80,14 @@ astra_pgbackrest() {
 
     echo "--> running pgbackrest"
 
+    echo "DEBUG: getting previous annotation..."
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
+    echo "prior = ${prior}"
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
     result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
+    echo "DEBUG: getting current annotation..."
     current=$(pgbackrest_backup_annotation $ns $db)
+    echo "current = ${current}"
 
     if [ "${current}" = "${prior}" ]; then
 	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
