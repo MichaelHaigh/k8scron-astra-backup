@@ -80,10 +80,14 @@ astra_pgbackrest() {
 
     echo "--> running pgbackrest"
 
+    echo "DEBUG: getting prior annotation..."
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
+    echo "DEBUG: prior = ${prior}"
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
     result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
+    echo "DEBUG: getting current annotation..."
     current=$(pgbackrest_backup_annotation ${ns} ${db})
+    echo "DEBUG: current = ${current}"
 
     if [ "${current}" = "${prior}" ]; then
 	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
