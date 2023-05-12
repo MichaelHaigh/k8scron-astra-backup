@@ -29,7 +29,7 @@ pgbackrest_backup_annotation() {
     ns=$1
     db=$2
     kubectl get --namespace ${ns} postgrescluster/${db} \
-        --output "go-template={{ index .metadata.annotations \"crunchydata.com/pgbackrest-backup\" }}"
+        --output "go-template={{ index .metadata.annotations \"${ns}.crunchydata.com/pgbackrest-backup\" }}"
 }
 
 wait_pgbackrest() {
