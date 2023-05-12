@@ -29,14 +29,15 @@ pgbackrest_backup_annotation() {
     ns=$1
     db=$2
     kubectl get --namespace ${ns} postgrescluster/${db} \
-        --output 'go-template={{ index .metadata.annotations "postgres-operator.crunchydata.com/pgbackrest-backup" }}'
+        --output 'go-template={{ index .metadata.annotations "\"${ns}\".crunchydata.com/pgbackrest-backup" }}'
 }
 
 wait_pgbackrest() {
-    curr_anno=$1
-    timeout=$2
-    pgbackrest_repo=$3
-    db=$4
+    ns=$1
+    curr_anno=$2
+    timeout=$3
+    pgbackrest_repo=$4
+    db=$5
     sleep_time=5
 
     # timeout is in minutes, sleep time in seconds.
@@ -47,12 +48,12 @@ wait_pgbackrest() {
     while [ ${i} -le ${retries} ]; do
 	backup_cmd=""
 	backup_cmd=$(
-	    kubectl get pods --namespace postgres-operator \
-		    -o jsonpath="{.items[?(@.metadata.annotations.postgres-operator\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
+	    kubectl get pods --namespace ${ns} \
+		    -o jsonpath="{.items[?(@.metadata.annotations.\"${ns}\"\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
 		    --selector "
-		    postgres-operator.crunchydata.com/cluster=${db},
-		    postgres-operator.crunchydata.com/pgbackrest-backup=manual,
-		    postgres-operator.crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
+		    \"${ns}\".crunchydata.com/cluster=${db},
+		    \"${ns}\".crunchydata.com/pgbackrest-backup=manual,
+		    \"${ns}\".crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
 			--field-selector 'status.phase=Succeeded'
 		  )
 
@@ -93,7 +94,7 @@ astra_pgbackrest() {
 
     # Now we need to wait until the pgbackrest pod is complete or error (timeout possibly)
     rc=1
-    wait_pgbackrest "${current}" ${pgbackrest_timeout} ${pgbackrest_repo} ${db}
+    wait_pgbackrest ${ns} "${current}" ${pgbackrest_timeout} ${pgbackrest_repo} ${db}
     # Using the global varaible modified in wait_pgbackrest - see comment at top of script
     if [ ${PGBACKREST_RES} -ne 0 ]; then
 	ERR="pgbackrest job did not complete successfully, either timed out or ended in error"
