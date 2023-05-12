@@ -80,14 +80,10 @@ astra_pgbackrest() {
 
     echo "--> running pgbackrest"
 
-    echo "DEBUG: getting previous annotation..."
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
-    echo "prior = ${prior}"
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
     result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
-    echo "DEBUG: getting current annotation..."
     current=$(pgbackrest_backup_annotation ${ns} ${db})
-    echo "current = ${current}"
 
     if [ "${current}" = "${prior}" ]; then
 	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
@@ -114,7 +110,7 @@ astra_create_backup() {
     app=$1
     astra_backup_poll_interval=$2
     echo "--> creating astra control backup"
-    actoolkit -v create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_poll_interval}
+    actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_poll_interval}
     rc=$?
     if [ ${rc} -ne 0 ] ; then
 	echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
