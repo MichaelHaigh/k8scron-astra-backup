@@ -49,11 +49,11 @@ wait_pgbackrest() {
 	backup_cmd=""
 	backup_cmd=$(
 	    kubectl get pods --namespace ${ns} \
-		    -o jsonpath="{.items[?(@.metadata.annotations.${ns}\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
+		    -o jsonpath="{.items[?(@.metadata.annotations.postgres-operator\.crunchydata\.com/pgbackrest-backup==\"${curr_anno}\")].spec.containers[*].env[?(@.name=='COMMAND_OPTS')].value}" \
 		    --selector "
-		    ${ns}.crunchydata.com/cluster=${db},
-		    ${ns}.crunchydata.com/pgbackrest-backup=manual,
-		    ${ns}.crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
+		    postgres-operator.crunchydata.com/cluster=${db},
+		    postgres-operator.crunchydata.com/pgbackrest-backup=manual,
+		    postgres-operator.crunchydata.com/pgbackrest-repo=${pgbackrest_repo}" \
 			--field-selector 'status.phase=Succeeded'
 		  )
 
