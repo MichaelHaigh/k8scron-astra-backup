@@ -57,8 +57,6 @@ wait_pgbackrest() {
 			--field-selector 'status.phase=Succeeded'
 		  )
 
-	echo "DEBUG: backup_cmd=${backup_cmd}"
-
 	if [[ -n "${backup_cmd}" && "${backup_cmd}" == "${PGBACKREST_EXP_CMD}" ]]; then
 	    echo "     Found backup command and it matched expected: ${PGBACKREST_EXP_CMD}"
 	    PGBACKREST_RES=0
@@ -82,14 +80,10 @@ astra_pgbackrest() {
 
     echo "--> running pgbackrest"
 
-    echo "DEBUG: getting prior annotation..."
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
-    echo "DEBUG: prior = ${prior}"
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
     result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
-    echo "DEBUG: getting current annotation..."
     current=$(pgbackrest_backup_annotation ${ns} ${db})
-    echo "DEBUG: current = ${current}"
 
     if [ "${current}" = "${prior}" ]; then
 	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
