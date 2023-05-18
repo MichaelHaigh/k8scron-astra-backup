@@ -129,12 +129,12 @@ astra_delete_backups() {
     echo "--> error running list backups for ${app}"
     exit ${eaclist}
   fi
-  num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
+  num_backups=$(echo $backup_json | jq  -r '.items[] | select(.state=="completed") | .id' | wc -l)
   
   while [ ${num_backups} -gt ${backups_keep} ] ; do
 
     echo "--> backups found: ${num_backups} is greater than backups to keep: ${backups_keep}"
-    oldest_backup=$(echo ${backup_json} | jq -r '.items | min_by(.metadata.creationTimestamp) | .id')
+    oldest_backup=$(echo ${backup_json} | jq '.items[] | select(.state=="completed")' | jq -s | jq -r 'min_by(.metadata.creationTimestamp) | .id')
     actoolkit destroy backup ${app} ${oldest_backup}
     rc=$?
     if [ ${rc} -ne 0 ] ; then
@@ -150,7 +150,7 @@ astra_delete_backups() {
       echo "--> error running list backups for ${app}"
       exit ${eaclist}
     fi
-    num_backups=$(echo $backup_json | jq  -r '.items[].id' | wc -l)
+    num_backups=$(echo $backup_json | jq  -r '.items[] | select(.state=="completed") | .id' | wc -l)
   done
 
   echo "--> backups at ${num_backups}"
