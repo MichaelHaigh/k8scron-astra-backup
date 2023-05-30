@@ -4,7 +4,7 @@ metadata:
   namespace: postgres-operator
   name: astra-pg-backup
 spec:
-  schedule: "0/2 * * * *"
+  schedule: "0 23 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
