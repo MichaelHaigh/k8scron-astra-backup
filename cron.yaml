@@ -4,7 +4,7 @@ metadata:
   namespace: postgres-operator
   name: astra-pg-backup
 spec:
-  schedule: "0 23 * * *"
+  schedule: "0/2 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -20,12 +20,14 @@ spec:
             image: alpine:latest
             imagePullPolicy: IfNotPresent
             env:
+              - name: NAMESPACE
+                value: "postgres-operator"
               - name: BACKUPS_TO_KEEP
                 value: "3"
               - name: APP_ID
-                value: "c606d0f7-3b9f-425a-ac9a-edde98b07f61"
+                value: "3baa9263-4cac-4168-9556-2bc290539c33"
               - name: PGDB_NAME
-                value: "pg-crunchy-test"
+                value: "crunchyv5-test"
               - name: PGBACKREST_REPO
                 value: "repo1"
               - name: KUBECTL_VERSION
@@ -55,7 +57,7 @@ spec:
               curl -sLO https://github.com/CrunchyData/postgres-operator-client/releases/download/v${KUBECTL_PGO_VERSION}/kubectl-pgo-linux-amd64 &&
               mv kubectl-pgo-linux-amd64 /usr/local/bin/kubectl-pgo &&
               chmod +x /usr/local/bin/kubectl-pgo &&
-              sh backup.sh "postgres-operator" $PGDB_NAME $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO $PGBACKREST_TIMEOUT $ASTRA_BACKUP_POLL_INTERVAL
+              sh backup.sh $NAMESPACE $PGDB_NAME $APP_ID $BACKUPS_TO_KEEP $PGBACKREST_REPO $PGBACKREST_TIMEOUT $ASTRA_BACKUP_POLL_INTERVAL
             volumeMounts:
               - mountPath: /etc/astra-toolkits
                 name: astra-control-config
