@@ -1,6 +1,13 @@
 #!/bin/sh
 
+# This variable is used for uniqueness across backup names, optionally change to a more preferred format
 BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
+
+# The ServiceNow hostname and credentials
+SNOW_INSTANCE='dev99999.service-now.com'
+SNOW_USERNAME='admin'
+SNOW_PASSWORD='thisIsNotARealPassword'
+
 # Need a global variable for wait_pgbackrest function.  One of the params contains ':' and does not
 # play well with a subshell invocation
 PGBACKREST_RES=1
@@ -17,12 +24,21 @@ epgbrtimeout=$((ebase+3))
 eaccreate=$((ebase+4))
 eaclist=$((ebase+5))
 eacdestroy=$((ebase+6))
+esnowticket=$((ebase+7))
 
 file_sn_ticket() {
     errmsg=$1
-
-    # Do what's needed to file SN ticket
-
+    curl "https://${SNOW_INSTANCE}/api/now/table/incident" \
+        --request POST \
+        --header "Accept:application/json" \
+        --header "Content-Type:application/json" \
+        --data "{'short_description': \"${errmsg}\",'urgency':'2','impact':'2'}" \
+        --user "${SNOW_USERNAME}":"${SNOW_PASSWORD}"
+    rc=$?
+    if [ ${rc} -ne 0 ] ; then
+        echo "--> Error creating ServiceNow ticket with error message: ${errmsg}"
+        exit ${esnowticket}
+    fi
 }
 
 pgbackrest_backup_annotation() {
@@ -86,10 +102,10 @@ astra_pgbackrest() {
     current=$(pgbackrest_backup_annotation ${ns} ${db})
 
     if [ "${current}" = "${prior}" ]; then
-	ERR="Expected annotation to change when executing pgbackrest, got ${current}"
-	echo ${ERR}
-	file_sn_ticket ${ERR}
-	exit ${epgannotation}
+        ERR="Expected annotation to change when executing pgbackrest, got ${current}"
+        echo ${ERR}
+        file_sn_ticket ${ERR}
+        exit ${epgannotation}
     fi
 
     # Now we need to wait until the pgbackrest pod is complete or error (timeout possibly)
@@ -97,10 +113,10 @@ astra_pgbackrest() {
     wait_pgbackrest ${ns} "${current}" ${pgbackrest_timeout} ${pgbackrest_repo} ${db}
     # Using the global varaible modified in wait_pgbackrest - see comment at top of script
     if [ ${PGBACKREST_RES} -ne 0 ]; then
-	ERR="pgbackrest job did not complete successfully, either timed out or ended in error"
-	echo ${ERR}
-	file_sn_ticket $ERR
-	exit ${epgbrtimeout}
+        ERR="pgbackrest job did not complete successfully, either timed out or ended in error"
+        echo ${ERR}
+        file_sn_ticket $ERR
+        exit ${epgbrtimeout}
     fi
     
     echo "--> pgbackrest completed successfully"
@@ -113,8 +129,9 @@ astra_create_backup() {
     actoolkit create backup ${app} cron-${BACKUP_DESCRIPTION} -t ${astra_backup_poll_interval}
     rc=$?
     if [ ${rc} -ne 0 ] ; then
-	echo "--> error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
-	exit ${eaccreate}
+        ERR="error creating astra control backup cron-${BACKUP_DESCRIPTION} for ${app}"
+        file_sn_ticket $ERR
+        exit ${eaccreate}
     fi
 }
 
@@ -126,7 +143,8 @@ astra_delete_backups() {
   backup_json=$(actoolkit -o json list backups --app ${app})
   rc=$?
   if [ ${rc} -ne 0 ] ; then
-    echo "--> error running list backups for ${app}"
+    ERR="error running list backups for ${app}"
+    file_sn_ticket $ERR
     exit ${eaclist}
   fi
   num_backups=$(echo $backup_json | jq  -r '.items[] | select(.state=="completed") | .id' | wc -l)
@@ -138,7 +156,8 @@ astra_delete_backups() {
     actoolkit destroy backup ${app} ${oldest_backup}
     rc=$?
     if [ ${rc} -ne 0 ] ; then
-      echo "--> error running destroy backup ${app} ${oldest_backup}"
+      ERR="error running destroy backup ${app} ${oldest_backup}"
+      file_sn_ticket $ERR
       exit ${eacdestroy}
     fi
 
@@ -147,13 +166,14 @@ astra_delete_backups() {
     backup_json=$(actoolkit -o json list backups --app ${app})
     rc=$?
     if [ ${rc} -ne 0 ] ; then
-      echo "--> error running list backups for ${app}"
+      ERR="error running list backups for ${app}"
+      file_sn_ticket $ERR
       exit ${eaclist}
     fi
     num_backups=$(echo $backup_json | jq  -r '.items[] | select(.state=="completed") | .id' | wc -l)
   done
 
-  echo "--> backups at ${num_backups}"
+  echo "astra control backups at ${num_backups}"
 }
 
 #
