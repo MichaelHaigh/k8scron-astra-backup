@@ -2,7 +2,7 @@
 
 This repo details utilizing Kubernetes CronJobs to initiate Astra Control application backups, in addition to external services associated with said application.
 
-## Secret Creation
+## actoolkit Secret Creation
 
 In order to initiate application backups against Astra Control, our Kubernetes CronJob must have an appropriate access information and privileges mounted to the pod.  This example makes use of the [Astra Control SDK](https://github.com/NetApp/netapp-astra-toolkits), so a `config.yaml` file is needed which contains several components.
 
@@ -35,6 +35,20 @@ Next, apply your secret to the namespace of the application that will be protect
 ```text
 NAMESPACE=wordpress
 kubectl -n $NAMESPACE create secret generic astra-control-config --from-file=config.yaml
+```
+
+## ServiceNow Secret Creation
+
+If either the pgbackrest or Astra Control backups fail, a ServiceNow ticket can be automatically opened via the CronJob script. For this functionality, ServiceNow authentication information (which has the ability to open an incident via an API call), must be stored as a secret within the Kubernetes namespace.
+
+To accomplish this, run the following command, substituting in the appropriate ServiceNow information:
+
+```text
+NAMESPACE=wordpress
+kubectl -n $NAMESPACE create secret generic servicenow-auth \
+    --from-literal=snow_instance='dev99999.service-now.com' \
+    --from-literal=snow_username='admin' \
+    --from-literal=snow_password='thisIsNotARealPassword'
 ```
 
 ## CronJob Creation

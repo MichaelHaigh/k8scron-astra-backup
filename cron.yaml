@@ -19,6 +19,9 @@ spec:
           - name: alpine-actoolkit
             image: alpine:latest
             imagePullPolicy: IfNotPresent
+            envFrom:
+            - secretRef:
+                name: servicenow-auth
             env:
               - name: NAMESPACE
                 value: "postgres-operator"

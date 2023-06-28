@@ -3,11 +3,6 @@
 # This variable is used for uniqueness across backup names, optionally change to a more preferred format
 BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
 
-# The ServiceNow hostname and credentials
-SNOW_INSTANCE='dev99999.service-now.com'
-SNOW_USERNAME='admin'
-SNOW_PASSWORD='thisIsNotARealPassword'
-
 # Need a global variable for wait_pgbackrest function.  One of the params contains ':' and does not
 # play well with a subshell invocation
 PGBACKREST_RES=1
@@ -28,12 +23,12 @@ esnowticket=$((ebase+7))
 
 file_sn_ticket() {
     errmsg=$1
-    curl "https://${SNOW_INSTANCE}/api/now/table/incident" \
+    curl "https://${snow_instance}/api/now/table/incident" \
         --request POST \
         --header "Accept:application/json" \
         --header "Content-Type:application/json" \
         --data "{'short_description': \"${errmsg}\",'urgency':'2','impact':'2'}" \
-        --user "${SNOW_USERNAME}":"${SNOW_PASSWORD}"
+        --user "${snow_username}":"${snow_password}"
     rc=$?
     if [ ${rc} -ne 0 ] ; then
         echo "--> Error creating ServiceNow ticket with error message: ${errmsg}"
