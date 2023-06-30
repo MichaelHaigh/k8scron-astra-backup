@@ -48,7 +48,9 @@ NAMESPACE=wordpress
 kubectl -n $NAMESPACE create secret generic servicenow-auth \
     --from-literal=snow_instance='dev99999.service-now.com' \
     --from-literal=snow_username='admin' \
-    --from-literal=snow_password='thisIsNotARealPassword'
+    --from-literal=snow_password='thisIsNotARealPassword' \
+    --from-literal=cluster_name='aks-eastus-99999' \
+    --from-literal=customer_name='contoso'
 ```
 
 ## CronJob Creation

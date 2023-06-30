@@ -23,12 +23,26 @@ esnowticket=$((ebase+7))
 
 file_sn_ticket() {
     errmsg=$1
-    curl "https://${snow_instance}/api/now/table/incident" \
+    curl "https://${snow_instance}/api/global/em/jsonv2" \
         --request POST \
         --header "Accept:application/json" \
         --header "Content-Type:application/json" \
-        --data "{'short_description': \"${errmsg}\",'urgency':'2','impact':'2'}" \
-        --user "${snow_username}":"${snow_password}"
+        --user "${snow_username}":"${snow_password}" \
+        --data @- << EOF
+{
+    "records":
+        [
+            {
+                "source": "Instance Webhook",
+                "resource": "${customer_name}",
+                "node": "${cluster_name}",
+                "type":"Astra Disaster Recovery Issue",
+                "severity":"3",
+                "description":"${errmsg}"
+            }
+        ]
+}
+EOF
     rc=$?
     if [ ${rc} -ne 0 ] ; then
         echo "--> Error creating ServiceNow ticket with error message: ${errmsg}"
