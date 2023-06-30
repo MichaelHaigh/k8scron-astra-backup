@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This variable is used for ServiceNow event creation assignment group
+ASSIGNMENT_GROUP="IaaS Storage.AG"
+
 # This variable is used for uniqueness across backup names, optionally change to a more preferred format
 BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
 
@@ -38,7 +41,8 @@ file_sn_ticket() {
                 "node": "${cluster_name}",
                 "type":"Astra Disaster Recovery Issue",
                 "severity":"3",
-                "description":"${errmsg}"
+                "description":"${errmsg}",
+                "additional_info": "{\"assignment_group\": \"${ASSIGNMENT_GROUP}\"}"
             }
         ]
 }
