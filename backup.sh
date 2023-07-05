@@ -1,7 +1,8 @@
 #!/bin/sh
 
 # This variable is used for ServiceNow event creation assignment group
-ASSIGNMENT_GROUP="IaaS Storage.AG"
+SUPPORT_GROUP_ALIAS="IaaS Storage.AG"
+SUPPORT_GROUP_ID="8ab19504132f1a002780d0528144b0db"
 
 # This variable is used for uniqueness across backup names, optionally change to a more preferred format
 BACKUP_DESCRIPTION=$(date "+%Y%m%d%H%M%S")
@@ -33,18 +34,22 @@ file_sn_ticket() {
         --user "${snow_username}":"${snow_password}" \
         --data @- << EOF
 {
-    "records":
-        [
-            {
-                "source": "Instance Webhook",
-                "resource": "${customer_name}",
-                "node": "${cluster_name}",
-                "type":"Astra Disaster Recovery Issue",
-                "severity":"3",
-                "description":"${errmsg}",
-                "additional_info": "{\"assignment_group\": \"${ASSIGNMENT_GROUP}\"}"
-            }
-        ]
+    "records": [
+        {
+            "source": "Instance Webhook",
+            "resource": "${customer_name}",
+            "node": "${cluster_name}",
+            "type":"Astra Disaster Recovery Issue",
+            "severity":"3",
+            "description":"${errmsg}",
+            "additional_info": "{
+                \"sn_ci_identifier\": \"${cluster_name}\",
+                \"sn_ci_type\": \"Kubernetes Cluster\",
+                \"supportGroupId\": \"${SUPPORT_GROUP_ID}\",
+                \"supportGroupAlias\": \"${SUPPORT_GROUP_ALIAS}\"
+            }"
+        }
+    ]
 }
 EOF
     rc=$?
