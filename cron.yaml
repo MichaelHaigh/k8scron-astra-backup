@@ -50,7 +50,8 @@ spec:
               echo "Starting install" &&
               apk add py3-pip curl jq &&
               apk add gcompat &&
-              python3 -m pip install --upgrade pip &&
+              python3 -m pip install --upgrade pip wheel &&
+              python3 -m pip install "Cython<3.0" pyyaml --no-build-isolation
               python3 -m pip install actoolkit==$ACTOOLKIT_VERSION &&
               curl -sLO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl &&
               mv kubectl /usr/bin/kubectl &&
