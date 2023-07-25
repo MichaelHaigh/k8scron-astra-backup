@@ -38,7 +38,7 @@ spec:
               - name: KUBECTL_PGO_VERSION
                 value: "0.2.0"
               - name: ACTOOLKIT_VERSION
-                value: "2.6.3"
+                value: "2.6.6"
               - name: PGBACKREST_TIMEOUT
                 value: "30"
               - name: ASTRA_BACKUP_POLL_INTERVAL
@@ -48,10 +48,8 @@ spec:
             - -c
             - >
               echo "Starting install" &&
-              apk add py3-pip curl jq &&
-              apk add gcompat &&
-              python3 -m pip install --upgrade pip wheel &&
-              python3 -m pip install "Cython<3.0" pyyaml --no-build-isolation &&
+              apk add py3-pip curl jq gcompat &&
+              python3 -m pip install --upgrade pip &&
               python3 -m pip install actoolkit==$ACTOOLKIT_VERSION &&
               curl -sLO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl &&
               mv kubectl /usr/bin/kubectl &&
