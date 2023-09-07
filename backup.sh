@@ -117,6 +117,21 @@ astra_pgbackrest() {
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
     result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
+    # It's possible there's an annotation conflict, this happens on restore.  If
+    # we see the word 'conflict' in the result, remove it and try again
+    for w in $result; do
+	if [ "$w" = "conflict" ]; then
+	    echo "Found annotation conflict, removing pgbackrest annotation"
+	    result=$(kubectl annotate --namespace ${ns} postgrescluster/${db} postgres-operator.crunchydata.com/pgbackrest-backup-)
+	    if [ $? != 0 ]; then
+		ERR="Error removing pgbackrest annotation: ${result}"
+		echo ${ERR}
+		file_sn_ticket ${ERR}
+		exit ${epgannotation}
+	    fi
+	fi
+    done
+
     current=$(pgbackrest_backup_annotation ${ns} ${db})
 
     if [ "${current}" = "${prior}" ]; then
