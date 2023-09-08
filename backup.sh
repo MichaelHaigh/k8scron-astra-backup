@@ -123,7 +123,7 @@ astra_pgbackrest() {
     for w in $result; do
 	if [ "$w" = "conflict" ] || [ "$w" = "conflicts" ]; then
 	    echo "Found annotation conflict, removing pgbackrest annotation"
-	    result=$(kubectl annotate --namespace ${ns} postgrescluster/${db} postgres-operator.crunchydata.com/pgbackrest-backup-)
+	    result=$("kubectl annotate --namespace ${ns} postgrescluster/${db} postgres-operator.crunchydata.com/pgbackrest-backup-")
 	    if [ $? != 0 ]; then
 		ERR="Error removing pgbackrest annotation: ${result}"
 		echo ${ERR}
@@ -132,6 +132,7 @@ astra_pgbackrest() {
 	    fi
 
 	    # With the annotation removed, we need to run the backup command again
+	    echo "--> running pgbackrest after removing annotation"
 	    result=$(${backup_cmd})
 	fi
     done
