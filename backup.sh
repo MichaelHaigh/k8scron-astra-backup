@@ -111,12 +111,13 @@ astra_pgbackrest() {
     db=$2
     pgbackrest_repo=$3
     pgbackrest_timeout=$4
+    backup_cmd="kubectl pgo --namespace ${ns} backup ${db} --repoName=\"${pgbackrest_repo}\" --options=\"--type=incr\""
 
     echo "--> running pgbackrest"
 
     prior=$(pgbackrest_backup_annotation ${ns} ${db})
     # Assumption is that the first full backup has already been done - all automated backups will be incremental
-    result=$(kubectl pgo --namespace ${ns} backup ${db} --repoName="${pgbackrest_repo}" --options="--type=incr")
+    result=$(${backup_cmd})
     # It's possible there's an annotation conflict, this happens on restore.  If
     # we see the word 'conflict' in the result, remove it and try again
     for w in $result; do
@@ -129,6 +130,9 @@ astra_pgbackrest() {
 		file_sn_ticket ${ERR}
 		exit ${epgannotation}
 	    fi
+
+	    # With the annotation removed, we need to run the backup command again
+	    result=$(${backup_cmd})
 	fi
     done
 
