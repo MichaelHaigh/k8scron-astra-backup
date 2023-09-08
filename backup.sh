@@ -121,7 +121,7 @@ astra_pgbackrest() {
     # It's possible there's an annotation conflict, this happens on restore.  If
     # we see the word 'conflict' in the result, remove it and try again
     for w in $result; do
-	if [ "$w" = "conflict" ]; then
+	if [ "$w" = "conflict" ] || [ "$w" = "conflicts" ]; then
 	    echo "Found annotation conflict, removing pgbackrest annotation"
 	    result=$(kubectl annotate --namespace ${ns} postgrescluster/${db} postgres-operator.crunchydata.com/pgbackrest-backup-)
 	    if [ $? != 0 ]; then
